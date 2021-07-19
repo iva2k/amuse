@@ -28,13 +28,14 @@ set peg_opts=--optimize size
 
 set logfile=makepeg.log
 set tmpfile=.\pegjs.tmp
-set installpath=..\src\assets
+set installpath=.\src\assets
 
-set peg_path=src\pag
+set peg_path=src\peg
 set peg_files=%peg_path%\*.peg
-set other_files=*.js *.ts
+rem set other_files=*.js *.ts
+set other_files=
 
-rem echo.DEBUG peg_files:"%peg_files%" files:"%files%" >>%logfile%
+echo.DEBUG peg_files:"%peg_files%" files:"%files%" >>%logfile%
 set clean=0
 set build=1
 set doinstall=1

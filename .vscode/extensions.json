@@ -1,0 +1,16 @@
+{
+    "recommendations": [
+        "johnpapa.angular2",
+        "ionic-preview.ionic-preview",
+        "loiane.ionic-extension-pack",
+        "buzatto.ionic-basic-pack",
+        "uvbrain.angular2",
+        "cyrilletuzi.angular-schematics",
+        "angular.ng-template",
+        "mikael.angular-beastcode",
+        "gruntfuggly.todo-tree",
+        "futagozaryuu.pegjs-syntax",
+        "theaustinseven.pegs",
+        "joeandaverde.vscode-pegjs-live"
+    ]
+}

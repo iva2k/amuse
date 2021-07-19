@@ -1,0 +1,130 @@
+// Accepts text-to-music expressions and parses them into an object.
+
+{
+  const ver = '0.1-2021-0718';
+  result = {};
+}
+
+
+TTM = cmds:Command*
+{
+  Object.assign(result, {
+  	cmds: cmds,
+  });
+  return result;
+}
+Command = 
+  Scale /
+  Time  /
+  Tempo /
+  Verse /
+  Chorus /
+  Unknown
+
+// Catch-all, last expression will match all unknown commands.
+Unknown = cmd:[^\n\r]+ EOL {
+    return {
+      cmd: 'Unknown',
+      text: cmd.join(''),
+    }
+}
+  
+Scale = cmd:CmdScale name:(_ Text _) EOL {
+    return {
+      cmd: cmd,
+      scale: name[1],
+    }
+  }
+
+Time = cmd:CmdTime val:(_ Integer _ Slash _ Integer) EOL {
+    return {
+      cmd: cmd,
+      time: val[1] + '/' + val[5],
+    }
+  }
+
+Tempo = cmd:CmdTempo val:(_ Integer _) EOL {
+    return {
+      cmd: cmd,
+      time: val[1],
+    }
+  }
+
+Verse = cmd:CmdVerse val:(_ Integer _) EOL chords:(ChordType EOLMUST / Chord EOLMUST)* {
+    let res = {
+      cmd: cmd,
+      count: val[1],
+      chords: chords.map( v => v[0] ),
+    }
+    return res;
+  }
+
+Chorus = cmd:CmdChorus val:(_ Integer _) EOL chords:(ChordType EOLMUST / Chord EOLMUST)* {
+    let res = {
+      cmd: cmd,
+      count: val[1],
+      chords: chords.map( v => v[0] ),
+    }
+    return res;
+  }
+
+Chord = 
+  val:(Note ChordMod) { return val.join(''); } /
+  val:Note { return val + 'maj'; } /
+
+// Put all chords above this line. IMPORTANT: Sort longer above shorter strings.  
+  '__END_OF_CHORDS__'
+  
+Note =
+  'A#' / 'Bb' /
+  'C#' / 'Db' /
+  'D#' / 'Eb' /
+  'F#' / 'Gb' /
+  'G#' / 'Ab' /
+  'A' /
+  'B' /
+  'C' /
+  'D' /
+  'E' /
+  'F' /
+  'G'
+
+ChordMod =
+  'maj' /
+  'min' / 'm'
+  
+ChordType =
+  'iii'  /
+  'ii'  /
+  'iv' /
+  'vi' /
+  'vii' /
+  'i'  /
+  'v'  /
+  'III'  /
+  'II'  /
+  'IV' /
+  'VI' /
+  'VII' /
+  'I'  /
+  'V'  /
+
+// Put all chords above this line. IMPORTANT: Sort longer above shorter strings.  
+  '__END_OF_CHORD_TYPES__'
+
+Slash = '/'
+
+CmdScale  = 'scale'i / 'key'i { return 'key'; }
+CmdTime   = 'time'i
+CmdTempo  = 'tempo'i
+CmdVerse  = 'verse'i
+CmdChorus = 'chorus'i
+
+Integer "integer" = _ [0-9]+ { return parseInt(text(), 10); }
+
+_ "whitespace" = [ \t\n\r]*
+  
+Text = val:[A-Za-z0-1 \t]* { return val.join(''); }
+
+EOL = [\n\r]*
+EOLMUST = [\n\r]+

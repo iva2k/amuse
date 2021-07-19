@@ -14,7 +14,7 @@ UserInterfaceState.xcuserstate
 $RECYCLE.BIN/
 
 *.log
-log.txt
+log.*
 npm-debug.log*
 
 /.idea
@@ -29,3 +29,5 @@ npm-debug.log*
 /platforms
 /plugins
 /www
+
+/src/peg/*.js

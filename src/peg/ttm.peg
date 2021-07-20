@@ -8,14 +8,14 @@
 
 TTM = cmds:Command*
 {
-  if (!result) {
-    result = {};
-  }
   Object.assign(result, {
   	cmds: cmds,
+    version: ver,
+    parser: 'TTM',
   });
   return result;
 }
+
 Command =
   Scale /
   Time  /

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TtmService } from '../services/ttm.service';
 
 @Component({
   selector: 'app-tab1',
@@ -21,9 +22,12 @@ export class Tab1Page {
     'vi',
     'IV',
   ].join('\n');
-  constructor() {}
-  onPlay() {
+  constructor(
+    private ttmService: TtmService,
+  ) {}
+  async onPlay() {
     console.log('onPlay()');
+    const result = await this.ttmService.processOne(this.textinput);
   }
 
 }

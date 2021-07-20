@@ -7,13 +7,13 @@ import * as Debug from 'debug';
 const debug = Debug('amuse:ttm');
 debug.enabled = true;
 
-const engine_rev = '0.1-20210719';
+const engineRev = '0.1-20210719';
 
 // Importing PegJs files based on glob pattern.
 // Typescript needs @types/node and @types/webpack-env (also add them to types: [ "node", "webpack-env" ] in tsconf.json).
 
 // Requires and returns all modules that match given context
-const requireAll = (requireContext: __WebpackModuleApi.RequireContext) => requireContext.keys().map(requireContext)
+const requireAll = (requireContext: __WebpackModuleApi.RequireContext) => requireContext.keys().map(requireContext);
 
 const parsers_ttm = requireAll(require.context('../../assets/', false, /^\.\/ttm\.js$/));
 // //TODO: (someday) Roll this code into requireAll(), add name to parsers arrays:
@@ -34,7 +34,7 @@ export class TtmService {
 
   async info() {
     return {
-      engine_rev,
+      engineRev,
       ttm_parser: '', // this.decoderInfo(),
     };
   }
@@ -188,7 +188,7 @@ export class TtmService {
       res.ttm_parsed  = ttm_parsed;
       //res.parsers_ttm = parsers_ttm.length;
     }
-    res.engine_rev = engine_rev;
+    res.engine_rev = engineRev;
     debug('processTtm(input=%o) result: %o', textinput, res);
     return res;
   }

@@ -2,6 +2,10 @@
 // import { TtmService } from './app/services/ttm.service';
 
 import { Injectable } from '@angular/core';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+import { Chord, Note, Interval, Progression, Scale } from '@tonaljs/tonal';
 
 import * as Debug from 'debug';
 const debug = Debug('amuse:ttm');
@@ -189,9 +193,196 @@ export class TtmService {
     return res;
   }
 
+  private postProcess(ttmObj: any) {
+    let currentKeyCmd;
+    let currentTimeCmd;
+    let currentTempoCmd;
+    let currentPlayCmd;
+    ttmObj.result.cmds.map((cmd, idx) => {
+      // Edit object in place
+      //debug('postProcess() cmd[%d]: %o', idx, cmd);
+      switch (cmd.cmd.toLowerCase()) {
+        case 'scale':
+        case 'key':
+          const scale = Scale.get(cmd.scaleName.toLowerCase());
+          cmd.scaleArr = scale.notes;
+          cmd.scaleTonic = scale.tonic;
+          currentKeyCmd = cmd;
+          break;
+        case 'time':
+          currentTimeCmd = cmd;
+          break;
+        case 'tempo':
+          currentTempoCmd = cmd;
+          break;
+        case 'verse':
+        case 'chorus':
+          currentPlayCmd = cmd;
+
+          // Translate chord progression (harmonic analysis form) into chords
+          let chords = cmd.chordsProgression ? cmd.chordsProgression : [];
+          chords = chords.map(c => {
+            let ret = c;
+            if (c === c.toLowerCase()) {
+              // Add "m" (minor) to lowercase chords, as @tonaljs/tonal.Progression does not care for lowercaseness as indication of minor.
+              ret = ret + 'm';
+            }
+            return ret;
+          });
+          cmd.chords = Progression.fromRomanNumerals(currentKeyCmd ? currentKeyCmd.scaleTonic : 'C', chords);
+
+          // Break chords into notes
+          cmd.chordNotes = [];
+          cmd.chords.map(chord => {
+            let notes = Chord.get(chord).notes;
+            notes = notes.map(note => note + '4'); // Add octave // TODO: somehow define which octave to play in.
+            cmd.chordNotes.push(notes);
+          });
+          break;
+        }
+    });
+    debug('postProcess(ttmObj: %o) result: %o', ttmObj);
+    return ttmObj;
+  }
   async processOne(textinput: string) {
     const result = this.processTtm(textinput + '\n'); // Add CRLF to ensure parser will not choke on last line
+    this.postProcess(result);
     debug('Processed result: %o', result);
     return result;
   }
+
+  private startNotes(port, notes) {
+    debug('startNotes(notes:%o)', notes);
+    const ch = 0;
+    const velocity = 127;
+    notes.map(note => port.noteOn(ch, note, velocity));
+  }
+  private stopNotes(port, notes) {
+    const ch = 0;
+    debug('stopNotes(notes:%o)', notes);
+    notes.map(note => port.noteOff(ch, note));
+  }
+
+  private calculateMeasureTimeMs(timeSignature, tempoBpm) {
+    if (!tempoBpm) { return 1000; } // Safe default
+    const [beatsPerMeasure, oneBeatType] = timeSignature.split('/');
+    // numberOfBeatsPerMinute = tempoBpm (N/min) * 1min
+    // beatTime (s) = 60s / numberOfBeatsPerMinute
+    // beatTime (s) = 60s / (tempoBpm (N/min) * 1min)
+    // measureTime (s)  = beatTime (s) * beatsPerMeasure
+    // measureTime (s)  = 60s / (tempoBpm (N/min) * 1min) * beatsPerMeasure
+    // measureTime (ms) = measureTime (s) * (1000ms/s)
+    return (60 * 1000 / tempoBpm * beatsPerMeasure);
+  }
+
+  private playerSubject = new Subject();
+  private playerObservableObj;
+  private stop$ = new Subject();
+  // private audioObj = {};
+  private playerObservable(port, ttmObj) {
+    let ttmIndex;
+    let currentKeyCmd;
+    let currentTimeCmd;
+    let currentTempoCmd;
+    let currentPlayCmd;
+    let currentPlayCnt = 0;
+    let currentPlayNotesToStop;
+    let currentMeasureTimeMs = 1000;
+
+    const events = [
+      'ended', 'error', 'play', 'playing', 'pause', 'timeupdate', 'canplay', 'loadedmetadata', 'loadstart'
+    ];
+
+    this.playerObservableObj = this.playerSubject.asObservable();
+
+    // Our worker will be also observing the subject, to schedule events asynchronously.
+    this.playerObservableObj.subscribe(event => {
+      debug('playerObservable()->subscribe event: %s, ttmIndex=%o, currentPlayCnt=%o', event.type, ttmIndex, currentPlayCnt);
+      switch (event.type) {
+        case 'loadstart':
+          ttmIndex = 0;
+          this.playerSubject.next({type: 'playing'});
+          break;
+        case 'playing':
+          this.playerSubject.next({type: 'timeupdate', index: ttmIndex});
+          break;
+        case 'timeupdate':
+          if (0 <= event.index && event.index < ttmObj.result.cmds.length) {
+            const cmd = ttmObj.result.cmds[event.index];
+            switch (cmd.cmd.toLowerCase()) {
+              case 'scale':
+              case 'key':
+                currentKeyCmd = cmd;
+                break;
+              case 'time':
+                currentTimeCmd = cmd;
+                break;
+              case 'tempo':
+                currentTempoCmd = cmd;
+                currentMeasureTimeMs = this.calculateMeasureTimeMs(currentTimeCmd.time, cmd.tempo);
+                break;
+              case 'verse':
+              case 'chorus':
+                currentPlayCmd = cmd;
+
+                if (currentPlayNotesToStop) {
+                  this.stopNotes(port, currentPlayNotesToStop);
+                }
+
+                if (currentPlayCnt < cmd.count) {
+                  const notesIndex = currentPlayCnt % cmd.chordNotes.length;
+                  currentPlayNotesToStop = cmd.chordNotes[notesIndex];
+                  // let notesArray = (typeof any(notes) === Array) ? notes : [notes];
+                  this.startNotes(port, currentPlayNotesToStop);
+                  currentPlayCnt += 1;
+
+                  // Schedule notes duration
+                  setTimeout(() => this.playerSubject.next({type: 'timeupdate', index: ttmIndex}), currentMeasureTimeMs);
+
+                  return; // Avoid advancing ttmIndex and emitting 'timeupdate' below.
+                }
+                break;
+              }
+              ttmIndex++;
+              currentPlayNotesToStop = [];
+              currentPlayCnt = 0;
+              this.playerSubject.next({type: 'timeupdate', index: ttmIndex});
+
+          } else {
+            this.playerSubject.next({type: 'ended'});
+          }
+          break;
+        case 'ended':
+          this.playerSubject.complete();
+          break;
+      }
+    });
+    this.playerSubject.next({type: 'loadstart'});
+    return this.playerObservableObj;
+  }
+
+  getPlayer(port, ttmObj) {
+    return this.playerObservable(port, ttmObj).pipe(takeUntil(this.stop$));
+  }
+
+  // playerPlay() {
+  //   this.audioObj.play();
+  // }
+
+  // playerPause() {
+  //   this.audioObj.pause();
+  // }
+
+  // playerStop() {
+  //   this.stop$.next();
+  // }
+
+  // playerSeekTo(seconds) {
+  //   this.audioObj.currentTime = seconds;
+  // }
+
+  // formatTime(time, format) {
+  //   return moment.utc(time).format(format);
+  // }
+
 }

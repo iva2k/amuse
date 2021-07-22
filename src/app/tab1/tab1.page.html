@@ -16,7 +16,7 @@
 
 <ion-item>
   <ion-label position="floating">Description</ion-label>
-  <ion-textarea autofocus=true rows="14" value="{{textinput}}">
+  <ion-textarea autofocus=true rows="14" (input)="onInput($event)" [value]="textinput">
   </ion-textarea>
 </ion-item>
 <ion-button (click)="onPlay()">

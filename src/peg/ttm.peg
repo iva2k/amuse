@@ -37,7 +37,7 @@ Scale = cmd:CmdScale name:(_ Text _) EOL {
     return {
       location: location(),
       cmd: cmd,
-      scale: name[1],
+      scaleName: name[1],
     }
   }
 
@@ -53,7 +53,7 @@ Tempo = cmd:CmdTempo val:(_ Integer _) EOL {
     return {
       location: location(),
       cmd: cmd,
-      time: val[1],
+      tempo: val[1],
     }
   }
 
@@ -62,7 +62,7 @@ Verse = cmd:CmdVerse val:(_ Integer _) EOL chords:(ChordType EOLMUST / Chord EOL
       location: location(),
       cmd: cmd,
       count: val[1],
-      chords: chords.map( v => v[0] ),
+      chordsProgression: chords.map( v => v[0] ),
     };
   }
 
@@ -71,7 +71,7 @@ Chorus = cmd:CmdChorus val:(_ Integer _) EOL chords:(ChordType EOLMUST / Chord E
       location: location(),
       cmd: cmd,
       count: val[1],
-      chords: chords.map( v => v[0] ),
+      chordsProgression: chords.map( v => v[0] ),
     };
   }
 
@@ -131,7 +131,7 @@ Integer "integer" = _ [0-9]+ { return parseInt(text(), 10); }
 
 _ "whitespace" = [ \t\n\r]*
 
-Text = val:[A-Za-z0-1 \t]* { return val.join(''); }
+Text = val:[A-Za-z0-1 \t#]* { return val.join(''); }
 
 EOL = [\n\r]*
 EOLMUST = [\n\r]+

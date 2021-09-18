@@ -1,10 +1,6 @@
 import { Component } from '@angular/core';
 import { TtmService } from '../services/ttm.service';
-
-import * as JZZts from 'jzz';
-import * as synth from 'jzz-synth-tiny';
-const JZZ: any = JZZts; // Open-up ts definition to allow calling plugins per the JS examples.
-synth(JZZ); // Inject plugin into JZZ: JZZ.synth = synth;
+import { MusicPlayerService } from '../services/music-player.service';
 
 @Component({
   selector: 'app-tab1',
@@ -30,14 +26,8 @@ export class Tab1Page {
   private port;
   constructor(
     private ttmService: TtmService,
+    private musicPlayerService: MusicPlayerService,
   ) {
-    JZZ().or('Cannot start MIDI engine');
-    JZZ.synth.Tiny.register('Synth');
-    //? JZZ.synth.Tiny.register('Web Audio');
-    //? synth(JZZ);
-    //synth.Tiny.register('Synth');
-
-    this.port = JZZ().openMidiOut().or('Cannot open MIDI Out port');
   }
 
   onInput(event) {
@@ -45,7 +35,14 @@ export class Tab1Page {
   }
 
   async onPlay() {
-    console.log('onPlay()');
+    const outputs = await this.musicPlayerService.getMidiOutputs();
+    console.log('MIDI outputs: %o', outputs);
+
+    // this.port = this.musicPlayerService.getMidiPort('TinySynth'); // Get specific named MIDI port
+    // this.port = this.musicPlayerService.getMidiPort('Web Audio'); // Get specific named MIDI port
+    this.port = await this.musicPlayerService.getMidiPort(undefined); // Get first available MIDI port
+    console.log('onPlay() port=%o', this.port);
+
     const result = await this.ttmService.processOne(this.textinput);
     console.log('onPlay() result.result.cmds=%o', result.result.cmds);
 

@@ -14,7 +14,7 @@ There are many various methods to represent musical pieces for human consumption
 
 These forms, however, are not easily accessible to computer use, e.g. they cannot be entered into musical software.
 
-TTM aims to create a human-centric method of representing music that also digestible by computers and musical software.
+TTM aims to create a human-centric method of representing music (and can be connected to voice interfaces like Alexa) that is also digestible by computers and musical software.
 
 Below are some considerations and TTM format documentation.
 
@@ -25,7 +25,7 @@ TTM aims for quick entry by humans, therefore it uses the following principles, 
 1. Stick to music industry conventions as much as possible
 2. Use simple alphabet and numbers found on standard computer keyboard keys
 3. Completely avoid use of symbols that are not found on keyboards
-4. Avoid all typographical features, such as bolds/italics, subscripts, superscripts, non latin alphabets, graphical icons, and any other exotics that are hard to enter
+4. Avoid all typographical features, such as bolds/italics, subscripts, superscripts, non latin alphabets, graphical icons, and any other exotics that are hard to enter on mobile or desktop computers
 5. For all symbols found on keyboards (e.g. on numeric keys, parenthesis, curly braces, less/more, square brackets, commas, semicolons and colons) that are a bit more difficult to type fast, the use is minimized if other simpler methods are accessible, e.g. using "Space" to separate entities and "Enter" key breaking lines to separate to a further degree.
 
 These principles lead us to choose "simple text" with line-oriented format of
@@ -50,6 +50,21 @@ The above durations, when combined, set compound length, e.g. '-=' sets 3/16 not
 TODO: Ideas revolve around 'space' being voicing split and 'space space' being word split, but it should be tried out.
 
 Note duration can be ommited if next note is the same, but sometimes it is more clear to show each note duration for better clarity.
+
+Notes and Chords are made distinguishable by requiring full Chord notation ("M" for Major, "m" for minor). Chords and notes can have octave number attached to it.
+
+Notes (without octave, when needed, default octave 4 is used):
+C C#/Db D D#/Eb E F F#/Gb G G#/Ab A A#/Bb B
+
+Notes with Octave:
+C5 C6 etc.
+
+Chords (octave sets root note)
+CM_5 C#m_4 etc.
+
+Chord Inversions
+TODO
+(One idea is to add "-i", "-ii" or such for 1st/2nd inversions)
 
 For 'Verse' and 'Chorus' commands, measure lines contain chords, not notes. Durations are set for whole measure if one cord is given. If two or more chords are given per line, the measure time will be automatically divided between the chords. If different time division is needed, use the above duration notations.
 

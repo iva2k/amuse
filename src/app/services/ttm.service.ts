@@ -1,3 +1,5 @@
+// TtmService - Text-To-Music operations and player
+
 // To use, copy this to the user module:
 // import { TtmService } from './app/services/ttm.service';
 
@@ -10,6 +12,11 @@ import { Chord, Note, Interval, Progression, Scale } from '@tonaljs/tonal';
 import * as Debug from 'debug';
 const debug = Debug('amuse:ttm');
 debug.enabled = true;
+
+import * as JZZts from 'jzz';
+import * as synth from 'jzz-synth-tiny';
+const JZZ: any = JZZts; // Open-up ts definition to allow calling plugins per the JS examples.
+let synthLoaded = false;
 
 const engineRev = '0.1-20210719';
 
@@ -361,8 +368,11 @@ export class TtmService {
     return this.playerObservableObj;
   }
 
-  getPlayer(port, ttmObj) {
-    return this.playerObservable(port, ttmObj).pipe(takeUntil(this.stop$));
+  /**
+    * @param midiPort open MIDI port e.g. from MusicPlayerService:getMidiPort()
+    */
+  getPlayer(midiPort, ttmObj) {
+    return this.playerObservable(midiPort, ttmObj).pipe(takeUntil(this.stop$));
   }
 
   // playerPlay() {
